@@ -60,4 +60,17 @@ module.exports = function(Product) {
   Product.validateAsync('price', validateMinimalPrice, {
     message: 'Price should be higher than the minimal price in the DB',
   });
+
+  Product.observe('before save', function(ctx, next) {
+    if (ctx.instance && ctx.instance.categoryId) {
+      return Product.app.models.Category
+        .count({id: ctx.instance.categoryId})
+        .then(res => {
+          if (res < 1) {
+            return Promise.reject('Error adding product to non-existing category');
+          }
+        });
+    }
+    return next();
+  });
 };
